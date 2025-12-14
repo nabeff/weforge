@@ -81,6 +81,25 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
+  localization: {
+    defaultLocale: 'en',
+    locales: [
+      {
+        code: 'en',
+        label: {
+          en: 'English',
+          fr: 'Anglais',
+        },
+      },
+      {
+        code: 'fr',
+        label: {
+          en: 'French',
+          fr: 'Français',
+        },
+      },
+    ],
+  },
   jobs: {
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
