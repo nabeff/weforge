@@ -2,11 +2,19 @@ import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/utilities/ui'
 import Link from 'next/link'
 import React from 'react'
-
 import type { Page, Post } from '@/payload-types'
 import type { TypedLocale } from 'payload'
+import { ArrowRight, ExternalLink, Phone, Mail, type LucideIcon } from 'lucide-react'
 
 type LocalizedString = string | Record<string, string> | null | undefined
+
+type LinkIcon = 'arrowRight' | 'external' | 'phone' | 'mail'
+const ICONS: Record<LinkIcon, LucideIcon> = {
+  arrowRight: ArrowRight,
+  external: ExternalLink,
+  phone: Phone,
+  mail: Mail,
+}
 
 type CMSLinkType = {
   appearance?: 'inline' | ButtonProps['variant']
@@ -19,9 +27,22 @@ type CMSLinkType = {
     value: Page | Post | string | number
   } | null
   size?: ButtonProps['size'] | null
-  type?: 'custom' | 'reference' | null
+
+  // ✅ now supports email/phone
+  type?: 'custom' | 'reference' | 'email' | 'phone' | null
+
   url?: LocalizedString
-  locale?: TypedLocale // ✅ added
+
+  // ✅ email/phone values (admin-friendly)
+  email?: string | null
+  phone?: string | null
+
+  // ✅ icon controls
+  showIcon?: boolean | null
+  icon?: LinkIcon | null
+  iconPosition?: 'left' | 'right' | null
+
+  locale?: TypedLocale
 }
 
 function getLocalized(value: LocalizedString, locale: TypedLocale, fallback: TypedLocale = 'en') {
@@ -32,20 +53,11 @@ function getLocalized(value: LocalizedString, locale: TypedLocale, fallback: Typ
 
 function prefixLocalePath(href: string, locale?: TypedLocale) {
   if (!href || !locale) return href
-
-  // external links / schemes
   if (/^https?:\/\//i.test(href) || href.startsWith('mailto:') || href.startsWith('tel:'))
     return href
-
-  // only handle internal absolute paths
   if (!href.startsWith('/')) return href
-
-  // already prefixed
   if (href === `/${locale}` || href.startsWith(`/${locale}/`)) return href
-
-  // root
   if (href === '/') return `/${locale}`
-
   return `/${locale}${href}`
 }
 
@@ -60,19 +72,33 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
     reference,
     size: sizeFromProps,
     url,
-    locale = 'en', // ✅ default fallback
+    locale = 'en',
+
+    email,
+    phone,
+
+    showIcon,
+    icon,
+    iconPosition = 'right',
   } = props
 
-  // Resolve label with fallback
   const resolvedLabel = getLocalized(label, locale, 'en')
 
-  // Resolve href
   let href: string | null = null
 
-  if (type === 'reference' && typeof reference?.value === 'object' && reference.value) {
+  // ✅ NEW: email / phone
+  if (type === 'email') {
+    const clean = (email ?? '').trim()
+    if (!clean) return null
+    href = clean.startsWith('mailto:') ? clean : `mailto:${clean}`
+  } else if (type === 'phone') {
+    const clean = (phone ?? '').trim()
+    if (!clean) return null
+    // allow +, spaces, dashes in admin, but tel: should be cleaned
+    const tel = clean.replace(/[^\d+]/g, '')
+    href = tel.startsWith('tel:') ? tel : `tel:${tel}`
+  } else if (type === 'reference' && typeof reference?.value === 'object' && reference.value) {
     const doc = reference.value as Page | Post
-
-    // slug might be string OR localized object if your slug field is localized
     const slugValue: any = (doc as any).slug
     const slug =
       typeof slugValue === 'string' ? slugValue : (slugValue?.[locale] ?? slugValue?.en ?? null)
@@ -85,28 +111,37 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
   }
 
   if (!href) return null
-
-  // ✅ ensure internal links include locale prefix
   href = prefixLocalePath(href, locale)
 
-  const size = appearance === 'link' ? 'clear' : sizeFromProps
   const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
+  const size = appearance === 'link' ? 'clear' : sizeFromProps
 
-  /* Ensure we don't break any styles set by richText */
+  const IconComp = showIcon && icon ? ICONS[icon] : null
+
+  const content = (
+    <>
+      {/* keep everything above the wipe layer */}
+      <span className="relative z-[1] inline-flex items-center gap-[1.4rem]">
+        {IconComp && iconPosition === 'left' ? <IconComp className="h-4 w-4" /> : null}
+        {resolvedLabel}
+        {children}
+        {IconComp && iconPosition === 'right' ? <IconComp className="h-4 w-4" /> : null}
+      </span>
+    </>
+  )
+
   if (appearance === 'inline') {
     return (
       <Link className={cn(className)} href={href} {...newTabProps}>
-        {resolvedLabel}
-        {children}
+        {content}
       </Link>
     )
   }
 
   return (
     <Button asChild className={className} size={size} variant={appearance}>
-      <Link className={cn(className)} href={href} {...newTabProps}>
-        {resolvedLabel}
-        {children}
+      <Link className={cn('relative', className)} href={href} {...newTabProps}>
+        {content}
       </Link>
     </Button>
   )

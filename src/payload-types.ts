@@ -177,7 +177,7 @@ export interface Page {
     links?:
       | {
           link: {
-            type?: ('reference' | 'custom') | null;
+            type?: ('reference' | 'custom' | 'email' | 'phone') | null;
             newTab?: boolean | null;
             reference?:
               | ({
@@ -189,11 +189,16 @@ export interface Page {
                   value: string | Post;
                 } | null);
             url?: string | null;
+            email?: string | null;
+            phone?: string | null;
             label: string;
+            showIcon?: boolean | null;
+            icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+            iconPosition?: ('left' | 'right') | null;
             /**
              * Choose how the link should be rendered.
              */
-            appearance?: ('default' | 'outline') | null;
+            appearance?: ('default' | 'outline' | 'primary' | 'secondary' | 'cmsLink') | null;
           };
           id?: string | null;
         }[]
@@ -460,7 +465,7 @@ export interface CallToActionBlock {
   links?:
     | {
         link: {
-          type?: ('reference' | 'custom') | null;
+          type?: ('reference' | 'custom' | 'email' | 'phone') | null;
           newTab?: boolean | null;
           reference?:
             | ({
@@ -472,11 +477,16 @@ export interface CallToActionBlock {
                 value: string | Post;
               } | null);
           url?: string | null;
+          email?: string | null;
+          phone?: string | null;
           label: string;
+          showIcon?: boolean | null;
+          icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+          iconPosition?: ('left' | 'right') | null;
           /**
            * Choose how the link should be rendered.
            */
-          appearance?: ('default' | 'outline') | null;
+          appearance?: ('default' | 'outline' | 'primary' | 'secondary' | 'cmsLink') | null;
         };
         id?: string | null;
       }[]
@@ -510,7 +520,7 @@ export interface ContentBlock {
         } | null;
         enableLink?: boolean | null;
         link?: {
-          type?: ('reference' | 'custom') | null;
+          type?: ('reference' | 'custom' | 'email' | 'phone') | null;
           newTab?: boolean | null;
           reference?:
             | ({
@@ -522,11 +532,16 @@ export interface ContentBlock {
                 value: string | Post;
               } | null);
           url?: string | null;
+          email?: string | null;
+          phone?: string | null;
           label: string;
+          showIcon?: boolean | null;
+          icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+          iconPosition?: ('left' | 'right') | null;
           /**
            * Choose how the link should be rendered.
            */
-          appearance?: ('default' | 'outline') | null;
+          appearance?: ('default' | 'outline' | 'primary' | 'secondary' | 'cmsLink') | null;
         };
         id?: string | null;
       }[]
@@ -1072,7 +1087,12 @@ export interface PagesSelect<T extends boolean = true> {
                     newTab?: T;
                     reference?: T;
                     url?: T;
+                    email?: T;
+                    phone?: T;
                     label?: T;
+                    showIcon?: T;
+                    icon?: T;
+                    iconPosition?: T;
                     appearance?: T;
                   };
               id?: T;
@@ -1118,7 +1138,12 @@ export interface CallToActionBlockSelect<T extends boolean = true> {
               newTab?: T;
               reference?: T;
               url?: T;
+              email?: T;
+              phone?: T;
               label?: T;
+              showIcon?: T;
+              icon?: T;
+              iconPosition?: T;
               appearance?: T;
             };
         id?: T;
@@ -1144,7 +1169,12 @@ export interface ContentBlockSelect<T extends boolean = true> {
               newTab?: T;
               reference?: T;
               url?: T;
+              email?: T;
+              phone?: T;
               label?: T;
+              showIcon?: T;
+              icon?: T;
+              iconPosition?: T;
               appearance?: T;
             };
         id?: T;
@@ -1638,7 +1668,7 @@ export interface Header {
   navItems?:
     | {
         link: {
-          type?: ('reference' | 'custom') | null;
+          type?: ('reference' | 'custom' | 'email' | 'phone') | null;
           newTab?: boolean | null;
           reference?:
             | ({
@@ -1650,7 +1680,12 @@ export interface Header {
                 value: string | Post;
               } | null);
           url?: string | null;
+          email?: string | null;
+          phone?: string | null;
           label: string;
+          showIcon?: boolean | null;
+          icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+          iconPosition?: ('left' | 'right') | null;
         };
         id?: string | null;
       }[]
@@ -1667,7 +1702,7 @@ export interface Footer {
   navItems?:
     | {
         link: {
-          type?: ('reference' | 'custom') | null;
+          type?: ('reference' | 'custom' | 'email' | 'phone') | null;
           newTab?: boolean | null;
           reference?:
             | ({
@@ -1679,7 +1714,12 @@ export interface Footer {
                 value: string | Post;
               } | null);
           url?: string | null;
+          email?: string | null;
+          phone?: string | null;
           label: string;
+          showIcon?: boolean | null;
+          icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+          iconPosition?: ('left' | 'right') | null;
         };
         id?: string | null;
       }[]
@@ -1702,7 +1742,12 @@ export interface HeaderSelect<T extends boolean = true> {
               newTab?: T;
               reference?: T;
               url?: T;
+              email?: T;
+              phone?: T;
               label?: T;
+              showIcon?: T;
+              icon?: T;
+              iconPosition?: T;
             };
         id?: T;
       };
@@ -1725,7 +1770,12 @@ export interface FooterSelect<T extends boolean = true> {
               newTab?: T;
               reference?: T;
               url?: T;
+              email?: T;
+              phone?: T;
               label?: T;
+              showIcon?: T;
+              icon?: T;
+              iconPosition?: T;
             };
         id?: T;
       };
