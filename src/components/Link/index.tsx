@@ -1,14 +1,19 @@
+'use client'
+
+import React from 'react'
+import Link from 'next/link'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/utilities/ui'
-import Link from 'next/link'
-import React from 'react'
 import type { Page, Post } from '@/payload-types'
 import type { TypedLocale } from 'payload'
 import { ArrowRight, ExternalLink, Phone, Mail, type LucideIcon } from 'lucide-react'
 
+/* ---------------------------------- Types --------------------------------- */
+
 type LocalizedString = string | Record<string, string> | null | undefined
 
-type LinkIcon = 'arrowRight' | 'external' | 'phone' | 'mail'
+export type LinkIcon = 'arrowRight' | 'external' | 'phone' | 'mail'
+
 const ICONS: Record<LinkIcon, LucideIcon> = {
   arrowRight: ArrowRight,
   external: ExternalLink,
@@ -16,34 +21,47 @@ const ICONS: Record<LinkIcon, LucideIcon> = {
   mail: Mail,
 }
 
-type CMSLinkType = {
-  appearance?: 'inline' | ButtonProps['variant']
-  children?: React.ReactNode
-  className?: string
-  label?: LocalizedString
+export type CMSLinkAppearance =
+  | 'inline'
+  | 'default'
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'link'
+  | 'cmsLink'
+  | null
+  | undefined
+
+export type CMSLinkType = {
+  locale?: TypedLocale
+
+  // link value
+  type?: 'custom' | 'reference' | 'email' | 'phone' | null
   newTab?: boolean | null
+  label?: LocalizedString
+
   reference?: {
     relationTo: 'pages' | 'posts'
     value: Page | Post | string | number
   } | null
-  size?: ButtonProps['size'] | null
-
-  // ✅ now supports email/phone
-  type?: 'custom' | 'reference' | 'email' | 'phone' | null
 
   url?: LocalizedString
-
-  // ✅ email/phone values (admin-friendly)
   email?: string | null
   phone?: string | null
 
-  // ✅ icon controls
+  // rendering
+  appearance?: CMSLinkAppearance
+  size?: ButtonProps['size'] | null
+  className?: string
+  children?: React.ReactNode
+
+  // icon controls
   showIcon?: boolean | null
   icon?: LinkIcon | null
   iconPosition?: 'left' | 'right' | null
-
-  locale?: TypedLocale
 }
+
+/* -------------------------------- Utilities -------------------------------- */
 
 function getLocalized(value: LocalizedString, locale: TypedLocale, fallback: TypedLocale = 'en') {
   if (!value) return null
@@ -61,86 +79,157 @@ function prefixLocalePath(href: string, locale?: TypedLocale) {
   return `/${locale}${href}`
 }
 
-export const CMSLink: React.FC<CMSLinkType> = (props) => {
-  const {
-    type,
-    appearance = 'inline',
-    children,
-    className,
-    label,
-    newTab,
-    reference,
-    size: sizeFromProps,
-    url,
-    locale = 'en',
+function cleanMailto(email: string) {
+  const clean = email.trim()
+  if (!clean) return null
+  return clean.startsWith('mailto:') ? clean : `mailto:${clean}`
+}
 
-    email,
-    phone,
+function cleanTel(phone: string) {
+  const clean = phone.trim()
+  if (!clean) return null
+  const tel = clean.replace(/[^\d+]/g, '')
+  if (!tel) return null
+  return tel.startsWith('tel:') ? tel : `tel:${tel}`
+}
 
-    showIcon,
-    icon,
-    iconPosition = 'right',
-  } = props
+function resolveHref(props: CMSLinkType): string | null {
+  const { type, reference, url, locale = 'en', email: emailRaw, phone: phoneRaw } = props
 
-  const resolvedLabel = getLocalized(label, locale, 'en')
-
-  let href: string | null = null
-
-  // ✅ NEW: email / phone
   if (type === 'email') {
-    const clean = (email ?? '').trim()
-    if (!clean) return null
-    href = clean.startsWith('mailto:') ? clean : `mailto:${clean}`
-  } else if (type === 'phone') {
-    const clean = (phone ?? '').trim()
-    if (!clean) return null
-    // allow +, spaces, dashes in admin, but tel: should be cleaned
-    const tel = clean.replace(/[^\d+]/g, '')
-    href = tel.startsWith('tel:') ? tel : `tel:${tel}`
-  } else if (type === 'reference' && typeof reference?.value === 'object' && reference.value) {
+    return emailRaw ? cleanMailto(emailRaw) : null
+  }
+
+  if (type === 'phone') {
+    return phoneRaw ? cleanTel(phoneRaw) : null
+  }
+
+  if (type === 'reference' && reference?.value && typeof reference.value === 'object') {
     const doc = reference.value as Page | Post
     const slugValue: any = (doc as any).slug
     const slug =
       typeof slugValue === 'string' ? slugValue : (slugValue?.[locale] ?? slugValue?.en ?? null)
 
-    if (slug) {
-      href = `${reference?.relationTo !== 'pages' ? `/${reference?.relationTo}` : ''}/${slug}`
-    }
-  } else {
-    href = getLocalized(url, locale, 'en')
+    if (!slug) return null
+    const base = reference.relationTo !== 'pages' ? `/${reference.relationTo}` : ''
+    return `${base}/${slug}`
   }
 
-  if (!href) return null
-  href = prefixLocalePath(href, locale)
+  // default => custom
+  return getLocalized(url, locale, 'en')
+}
+
+function normalizeAppearance(a: CMSLinkAppearance) {
+  const appearance = (a ?? 'inline') as Exclude<CMSLinkAppearance, null | undefined>
+
+  // ✅ map admin "cmsLink" to runtime "link"
+  if (appearance === 'cmsLink') return 'link' as const
+
+  return appearance as Exclude<CMSLinkAppearance, null | undefined>
+}
+
+/* -------------------------------- Component -------------------------------- */
+
+export const CMSLink: React.FC<CMSLinkType> = (props) => {
+  const {
+    locale = 'en',
+    appearance: appearanceRaw = 'inline',
+    size: sizeFromProps,
+    className,
+    newTab,
+    label,
+    children,
+    showIcon,
+    icon,
+    iconPosition = 'right',
+  } = props
+
+  const appearance = normalizeAppearance(appearanceRaw)
+  const hrefRaw = resolveHref({ ...props, locale })
+  if (!hrefRaw) return null
+
+  const href = prefixLocalePath(hrefRaw, locale)
 
   const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
-  const size = appearance === 'link' ? 'clear' : sizeFromProps
 
+  // label resolution
+  const resolvedLabel = getLocalized(label, locale, 'en')
+  const text = resolvedLabel ?? ''
+
+  // icon resolution
   const IconComp = showIcon && icon ? ICONS[icon] : null
+  const leftIcon = IconComp && iconPosition === 'left' ? <IconComp className="h-4 w-4" /> : null
+  const rightIcon = IconComp && iconPosition === 'right' ? <IconComp className="h-4 w-4" /> : null
 
-  const content = (
-    <>
-      {/* keep everything above the wipe layer */}
-      <span className="relative z-[1] inline-flex items-center gap-[1.4rem]">
-        {IconComp && iconPosition === 'left' ? <IconComp className="h-4 w-4" /> : null}
-        {resolvedLabel}
-        {children}
-        {IconComp && iconPosition === 'right' ? <IconComp className="h-4 w-4" /> : null}
+  // if you want primary to always show ArrowRight, keep this:
+  const forcePrimaryArrow = appearance === 'primary'
+
+  // content blocks
+  const PrimaryLabel = (
+    <span className="relative z-[1] inline-flex items-center gap-2">
+      {leftIcon}
+
+      <span className="relative inline-block h-[1.35em] overflow-y-hidden overflow-x-visible align-middle leading-[1.1] py-[0.06em] px-[0.04em] -mx-[0.04em]">
+        <span className="invisible whitespace-nowrap">
+          {text}
+          {children}
+        </span>
+
+        <span className="absolute inset-0 flex items-center justify-center pl-[0.02em] translate-y-0 will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:-translate-y-full">
+          <span className="whitespace-nowrap transition-[letter-spacing] duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:tracking-[0.02em]">
+            {text}
+            {children}
+          </span>
+        </span>
+
+        <span className="absolute inset-0 flex items-center justify-center pl-[0.02em] translate-y-full will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:translate-y-0">
+          <span className="whitespace-nowrap transition-[letter-spacing] duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:tracking-[0.02em]">
+            {text}
+            {children}
+          </span>
+        </span>
       </span>
-    </>
+
+      {forcePrimaryArrow ? (
+        <ArrowRight className="h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:translate-x-[2px]" />
+      ) : (
+        rightIcon
+      )}
+    </span>
   )
 
+  const DefaultContent = (
+    <span className="relative z-[1] inline-flex items-center gap-6">
+      {leftIcon}
+      {text}
+      {children}
+      {rightIcon}
+    </span>
+  )
+
+  const content = appearance === 'primary' ? PrimaryLabel : DefaultContent
+
+  // Inline link (no Button)
   if (appearance === 'inline') {
     return (
-      <Link className={cn(className)} href={href} {...newTabProps}>
+      <Link href={href} {...newTabProps} className={cn(className)}>
         {content}
       </Link>
     )
   }
 
+  // Button-wrapped link
+  // - for "link" appearance, we use your button "clear" size
+  const size = appearance === 'link' ? 'clear' : sizeFromProps
+
   return (
-    <Button asChild className={className} size={size} variant={appearance}>
-      <Link className={cn('relative', className)} href={href} {...newTabProps}>
+    <Button
+      asChild
+      size={size as ButtonProps['size']}
+      variant={appearance as ButtonProps['variant']}
+      className={cn(className)}
+    >
+      <Link href={href} {...newTabProps} className={cn('relative', className)}>
         {content}
       </Link>
     </Button>

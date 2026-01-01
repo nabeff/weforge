@@ -1665,6 +1665,34 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface Header {
   id: string;
+  brandTitle: string;
+  headerCTA: {
+    enabled?: boolean | null;
+    link: {
+      type?: ('reference' | 'custom' | 'email' | 'phone') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: string | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: string | Post;
+          } | null);
+      url?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      label: string;
+      showIcon?: boolean | null;
+      icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+      iconPosition?: ('left' | 'right') | null;
+      /**
+       * Choose how the link should be rendered.
+       */
+      appearance?: ('default' | 'outline' | 'primary' | 'secondary' | 'cmsLink') | null;
+    };
+  };
   navItems?:
     | {
         link: {
@@ -1686,6 +1714,61 @@ export interface Header {
           showIcon?: boolean | null;
           icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
           iconPosition?: ('left' | 'right') | null;
+        };
+        dropdown?: {
+          enabled?: boolean | null;
+          /**
+           * Big left title link inside the dropdown curtain.
+           */
+          panelTitle?: {
+            type?: ('reference' | 'custom' | 'email' | 'phone') | null;
+            newTab?: boolean | null;
+            reference?:
+              | ({
+                  relationTo: 'pages';
+                  value: string | Page;
+                } | null)
+              | ({
+                  relationTo: 'posts';
+                  value: string | Post;
+                } | null);
+            url?: string | null;
+            email?: string | null;
+            phone?: string | null;
+            label: string;
+            showIcon?: boolean | null;
+            icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+            iconPosition?: ('left' | 'right') | null;
+          };
+          panelText?: string | null;
+          panelImage?: (string | null) | Media;
+          items?:
+            | {
+                link: {
+                  type?: ('reference' | 'custom' | 'email' | 'phone') | null;
+                  newTab?: boolean | null;
+                  reference?:
+                    | ({
+                        relationTo: 'pages';
+                        value: string | Page;
+                      } | null)
+                    | ({
+                        relationTo: 'posts';
+                        value: string | Post;
+                      } | null);
+                  url?: string | null;
+                  email?: string | null;
+                  phone?: string | null;
+                  label: string;
+                  showIcon?: boolean | null;
+                  icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+                  iconPosition?: ('left' | 'right') | null;
+                };
+                description?: string | null;
+                itemImage?: (string | null) | Media;
+                id?: string | null;
+              }[]
+            | null;
         };
         id?: string | null;
       }[]
@@ -1732,6 +1815,27 @@ export interface Footer {
  * via the `definition` "header_select".
  */
 export interface HeaderSelect<T extends boolean = true> {
+  brandTitle?: T;
+  headerCTA?:
+    | T
+    | {
+        enabled?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              email?: T;
+              phone?: T;
+              label?: T;
+              showIcon?: T;
+              icon?: T;
+              iconPosition?: T;
+              appearance?: T;
+            };
+      };
   navItems?:
     | T
     | {
@@ -1748,6 +1852,48 @@ export interface HeaderSelect<T extends boolean = true> {
               showIcon?: T;
               icon?: T;
               iconPosition?: T;
+            };
+        dropdown?:
+          | T
+          | {
+              enabled?: T;
+              panelTitle?:
+                | T
+                | {
+                    type?: T;
+                    newTab?: T;
+                    reference?: T;
+                    url?: T;
+                    email?: T;
+                    phone?: T;
+                    label?: T;
+                    showIcon?: T;
+                    icon?: T;
+                    iconPosition?: T;
+                  };
+              panelText?: T;
+              panelImage?: T;
+              items?:
+                | T
+                | {
+                    link?:
+                      | T
+                      | {
+                          type?: T;
+                          newTab?: T;
+                          reference?: T;
+                          url?: T;
+                          email?: T;
+                          phone?: T;
+                          label?: T;
+                          showIcon?: T;
+                          icon?: T;
+                          iconPosition?: T;
+                        };
+                    description?: T;
+                    itemImage?: T;
+                    id?: T;
+                  };
             };
         id?: T;
       };

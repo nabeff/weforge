@@ -10,31 +10,39 @@ export function LocaleSwitcher() {
   const isEN = locale === 'en'
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       <button
         type="button"
         onClick={() => switchTo('fr' as TypedLocale)}
-        className={[
-          'text-sm uppercase tracking-wide transition-opacity',
-          isFR ? 'opacity-100 font-semibold' : 'opacity-60 hover:opacity-100',
-        ].join(' ')}
         aria-current={isFR ? 'true' : undefined}
+        className={[
+          'link-hover-swap',
+          'text-sm  tracking-wide',
+          // ✅ hover should NOT turn white, only active is white
+          isFR ? 'text-white opacity-100 ' : 'text-white/60 hover:text-white/60',
+        ].join(' ')}
       >
-        FR
+        <span className="link-hover-swap__inner" data-text="Fr">
+          Fr
+        </span>
       </button>
 
-      <span className="opacity-40">|</span>
+      {/* ✅ removed the vertical line */}
 
       <button
         type="button"
         onClick={() => switchTo('en' as TypedLocale)}
-        className={[
-          'text-sm uppercase tracking-wide transition-opacity',
-          isEN ? 'opacity-100 font-semibold' : 'opacity-60 hover:opacity-100',
-        ].join(' ')}
         aria-current={isEN ? 'true' : undefined}
+        className={[
+          'link-hover-swap',
+          'text-sm  tracking-wide',
+          // ✅ hover should NOT turn white, only active is white
+          isEN ? 'text-white opacity-100 ' : 'text-white/60 hover:text-white/60',
+        ].join(' ')}
       >
-        EN
+        <span className="link-hover-swap__inner" data-text="En">
+          En
+        </span>
       </button>
     </div>
   )

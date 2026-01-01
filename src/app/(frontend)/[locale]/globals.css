@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  /* Typography fonts */
+  body {
+    @apply font-sans bg-[#0e0e0e] text-foreground min-h-[100vh] flex flex-col;
+  }
+
   h1,
   h2,
   h3,
@@ -11,6 +16,11 @@
   h6 {
     font-size: unset;
     font-weight: unset;
+    @apply font-title;
+  }
+
+  * {
+    @apply border-border;
   }
 
   :root {
@@ -84,15 +94,6 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground min-h-[100vh] flex flex-col;
-  }
-}
-
 html {
   opacity: 0;
 }
@@ -100,4 +101,67 @@ html {
 html[data-theme='dark'],
 html[data-theme='light'] {
   opacity: initial;
+}
+
+/* LINK UNDERLINE SWIPE */
+.link-underline-swipe {
+  position: relative;
+  display: flex;
+}
+
+.link-underline-swipe::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.2em; /* adjust distance under text */
+  height: 1px;
+  background-color: currentColor;
+
+  transform: scaleX(0);
+  transform-origin: right; /* base = hide to the right */
+  transition: transform 0.35s ease;
+}
+
+.link-underline-swipe:hover::after {
+  transform: scaleX(1);
+  transform-origin: left; /* on hover = grow from left */
+}
+
+@keyframes hero-slide-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* globals.css (or your main stylesheet)
+   Replace your current underline animation class with this one.
+*/
+.link-hover-swap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  text-decoration: none; /* ✅ removes the underline line */
+}
+
+.link-hover-swap > .link-hover-swap__inner {
+  position: relative;
+  display: inline-block;
+  transition: transform 0.6s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+
+.link-hover-swap > .link-hover-swap__inner::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  white-space: nowrap;
+}
+
+.link-hover-swap:hover > .link-hover-swap__inner {
+  transform: translateY(-100%);
 }
