@@ -66,7 +66,7 @@ export type CMSLinkType = {
 function getLocalized(value: LocalizedString, locale: TypedLocale, fallback: TypedLocale = 'en') {
   if (!value) return null
   if (typeof value === 'string') return value
-  return value[locale] ?? value[fallback] ?? null
+  return (value as any)?.[locale] ?? (value as any)?.[fallback] ?? null
 }
 
 function prefixLocalePath(href: string, locale?: TypedLocale) {
@@ -96,13 +96,8 @@ function cleanTel(phone: string) {
 function resolveHref(props: CMSLinkType): string | null {
   const { type, reference, url, locale = 'en', email: emailRaw, phone: phoneRaw } = props
 
-  if (type === 'email') {
-    return emailRaw ? cleanMailto(emailRaw) : null
-  }
-
-  if (type === 'phone') {
-    return phoneRaw ? cleanTel(phoneRaw) : null
-  }
+  if (type === 'email') return emailRaw ? cleanMailto(emailRaw) : null
+  if (type === 'phone') return phoneRaw ? cleanTel(phoneRaw) : null
 
   if (type === 'reference' && reference?.value && typeof reference.value === 'object') {
     const doc = reference.value as Page | Post
@@ -115,16 +110,12 @@ function resolveHref(props: CMSLinkType): string | null {
     return `${base}/${slug}`
   }
 
-  // default => custom
   return getLocalized(url, locale, 'en')
 }
 
 function normalizeAppearance(a: CMSLinkAppearance) {
   const appearance = (a ?? 'inline') as Exclude<CMSLinkAppearance, null | undefined>
-
-  // ✅ map admin "cmsLink" to runtime "link"
   if (appearance === 'cmsLink') return 'link' as const
-
   return appearance as Exclude<CMSLinkAppearance, null | undefined>
 }
 
@@ -152,49 +143,25 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
 
   const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
 
-  // label resolution
   const resolvedLabel = getLocalized(label, locale, 'en')
   const text = resolvedLabel ?? ''
 
-  // icon resolution
   const IconComp = showIcon && icon ? ICONS[icon] : null
   const leftIcon = IconComp && iconPosition === 'left' ? <IconComp className="h-4 w-4" /> : null
   const rightIcon = IconComp && iconPosition === 'right' ? <IconComp className="h-4 w-4" /> : null
 
-  // if you want primary to always show ArrowRight, keep this:
   const forcePrimaryArrow = appearance === 'primary'
 
-  // content blocks
   const PrimaryLabel = (
     <span className="relative z-[1] inline-flex items-center gap-2">
       {leftIcon}
 
-      <span className="relative inline-block h-[1.35em] overflow-y-hidden overflow-x-visible align-middle leading-[1.1] py-[0.06em] px-[0.04em] -mx-[0.04em]">
-        <span className="invisible whitespace-nowrap">
+      <span className="link-hover-swap">
+        <span className="link-hover-swap__inner whitespace-nowrap" data-text={text}>
           {text}
           {children}
         </span>
-
-        <span className="absolute inset-0 flex items-center justify-center pl-[0.02em] translate-y-0 will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:-translate-y-full">
-          <span className="whitespace-nowrap transition-[letter-spacing] duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:tracking-[0.02em]">
-            {text}
-            {children}
-          </span>
-        </span>
-
-        <span className="absolute inset-0 flex items-center justify-center pl-[0.02em] translate-y-full will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:translate-y-0">
-          <span className="whitespace-nowrap transition-[letter-spacing] duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:tracking-[0.02em]">
-            {text}
-            {children}
-          </span>
-        </span>
       </span>
-
-      {forcePrimaryArrow ? (
-        <ArrowRight className="h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.20,0.00,0.10,1.00)] group-hover:translate-x-[2px]" />
-      ) : (
-        rightIcon
-      )}
     </span>
   )
 
@@ -209,7 +176,6 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
 
   const content = appearance === 'primary' ? PrimaryLabel : DefaultContent
 
-  // Inline link (no Button)
   if (appearance === 'inline') {
     return (
       <Link href={href} {...newTabProps} className={cn(className)}>
@@ -218,8 +184,6 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
     )
   }
 
-  // Button-wrapped link
-  // - for "link" appearance, we use your button "clear" size
   const size = appearance === 'link' ? 'clear' : sizeFromProps
 
   return (

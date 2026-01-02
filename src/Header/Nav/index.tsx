@@ -1,75 +1,24 @@
+// src/Header/Nav.tsx
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 
-import type { Header as HeaderType, Media, Page, Post } from '@/payload-types'
+import type { Media as MediaType } from '@/payload-types'
 import type { TypedLocale } from 'payload'
 
 import { HEADER_HEIGHT_PX } from '../Component.client'
-
-type LocalizedString = string | Record<string, string> | null | undefined
-
-const getLocalized = (
-  value: LocalizedString,
-  locale: TypedLocale,
-  fallback: TypedLocale = 'en',
-) => {
-  if (!value) return ''
-  if (typeof value === 'string') return value
-  return (value as any)?.[locale] ?? (value as any)?.[fallback] ?? ''
-}
-
-const prefixLocalePath = (href: string, locale?: TypedLocale) => {
-  if (!href || !locale) return href
-  if (/^https?:\/\//i.test(href) || href.startsWith('mailto:') || href.startsWith('tel:'))
-    return href
-  if (!href.startsWith('/')) return href
-  if (href === `/${locale}` || href.startsWith(`/${locale}/`)) return href
-  if (href === '/') return `/${locale}`
-  return `/${locale}${href}`
-}
-
-const resolveHref = (link: any, locale: TypedLocale) => {
-  let href: string | null = null
-
-  if (
-    link?.type === 'reference' &&
-    typeof link?.reference?.value === 'object' &&
-    link.reference.value
-  ) {
-    const doc = link.reference.value as Page | Post
-    const slugValue: any = (doc as any).slug
-    const slug =
-      typeof slugValue === 'string' ? slugValue : (slugValue?.[locale] ?? slugValue?.en ?? null)
-
-    if (slug) {
-      href = `${link.reference?.relationTo !== 'pages' ? `/${link.reference?.relationTo}` : ''}/${slug}`
-    }
-  } else {
-    href = getLocalized(link?.url, locale, 'en') || null
-  }
-
-  if (!href) return null
-  return prefixLocalePath(href, locale)
-}
-
-const getMediaUrl = (m?: Media | string | null) => {
-  if (!m) return null
-  if (typeof m === 'string') return m
-  return (m as any)?.url ?? null
-}
+import { Media } from '@/components/Media'
 
 interface HeaderNavProps {
-  data: HeaderType
+  navItems: any[]
   locale: TypedLocale
 }
 
-export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
-  const navItems = data?.navItems || []
+const toHref = (l: any) => l?.url || l?.href || '/'
 
+export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [activeItemIndex, setActiveItemIndex] = useState<number>(0)
 
@@ -105,9 +54,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
   }, [])
 
   const isOpen = openIndex !== null
-  const activeDropdown = openIndex !== null ? (navItems?.[openIndex] as any)?.dropdown : null
+  const activeDropdown = isOpen ? navItems?.[openIndex!]?.dropdown : null
 
-  // ✅ This is the key fix: use a separate "reveal" state so transitions ALWAYS fire
   const [reveal, setReveal] = useState(false)
 
   useEffect(() => {
@@ -116,55 +64,83 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
       return
     }
 
-    // reset then enable next frame so the browser animates translateY
     setReveal(false)
     const id = requestAnimationFrame(() => setReveal(true))
     return () => cancelAnimationFrame(id)
   }, [isOpen, openTick])
 
-  // Panel Title is now a LINK in config:
-  const panelTitleLink = useMemo(() => {
-    const l = (activeDropdown as any)?.panelTitle
-    return l ? resolveHref(l, locale) : null
-  }, [activeDropdown, locale])
+  const panelTitle = activeDropdown?.panelTitle
+  const panelText = activeDropdown?.panelText || ''
+  const panelImage = (activeDropdown?.panelImage as MediaType | undefined) || undefined
 
-  const panelTitleLabel = useMemo(() => {
-    const l = (activeDropdown as any)?.panelTitle
-    return getLocalized(l?.label, locale)
-  }, [activeDropdown, locale])
-
-  const panelText = useMemo(
-    () => getLocalized(activeDropdown?.panelText, locale),
-    [activeDropdown, locale],
-  )
-
-  const fallbackPanelImageUrl = useMemo(() => {
-    return getMediaUrl(activeDropdown?.panelImage as Media | string | undefined)
-  }, [activeDropdown])
-
-  const previewImageUrl = useMemo(() => {
-    const items = (activeDropdown?.items || []) as any[]
+  const previewMedia = useMemo(() => {
+    if (!activeDropdown) return null
+    const items = (activeDropdown.items || []) as any[]
     const dd = items?.[activeItemIndex]
-    const perItem = dd?.itemImage as Media | string | undefined
-    return getMediaUrl(perItem) || fallbackPanelImageUrl
-  }, [activeDropdown, activeItemIndex, fallbackPanelImageUrl])
+    const perItem = (dd?.itemImage as MediaType | undefined) || undefined
+    return perItem || panelImage || null
+  }, [activeDropdown, activeItemIndex, panelImage])
+
+  // ✅ Image swap timings (scale-down 1.2 -> 1)
+  const IMG_DUR = 620
+  const IMG_EASE = 'cubic-bezier(0.22,1,0.36,1)'
+
+  const [displayMedia, setDisplayMedia] = useState<MediaType | null>(null)
+  const [incomingMedia, setIncomingMedia] = useState<MediaType | null>(null)
+
+  const swapTokenRef = useRef(0)
+  const swapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearSwapTimer = () => {
+    if (swapTimerRef.current) {
+      clearTimeout(swapTimerRef.current)
+      swapTimerRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    if (!previewMedia) return
+
+    // first mount
+    if (!displayMedia) {
+      setDisplayMedia(previewMedia)
+      return
+    }
+
+    // same media
+    const prevId = (displayMedia as any)?.id
+    const nextId = (previewMedia as any)?.id
+    if (prevId && nextId && prevId === nextId) return
+
+    clearSwapTimer()
+    const token = ++swapTokenRef.current
+
+    setIncomingMedia(previewMedia)
+
+    swapTimerRef.current = setTimeout(() => {
+      if (swapTokenRef.current !== token) return
+      setDisplayMedia(previewMedia)
+      setIncomingMedia(null)
+    }, IMG_DUR)
+
+    return () => clearSwapTimer()
+  }, [previewMedia, displayMedia])
 
   // ✅ HEIGHT of the curtain (mask)
   const OPEN_PANEL_HEIGHT = HEADER_HEIGHT_PX + 540
 
-  // ✅ Make curtain a bit slower
+  // ✅ Curtain: slower, pure slide (max-height), no opacity tricks
   const EASE = 'cubic-bezier(0.2,0,0.1,1)'
-  const CURTAIN_DUR = 820
+  const CURTAIN_DUR = 1200 // slower
 
+  // content timing (same vibe as before)
   const DUR = 520
   const RIGHT_DELAY = 95
 
-  // ✅ List stagger (one by one)
   const LIST_START = 90
   const ROW_STAGGER = 65
   const DESC_EXTRA = 70
 
-  // ✅ Left column stagger (one by one, like the list)
   const PANEL_TITLE_DELAY = LIST_START
   const PANEL_TEXT_DELAY = LIST_START + 80
 
@@ -172,31 +148,24 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
     <>
       {/* ✅ NAV always above dropdown */}
       <nav className="relative z-[1200] flex items-center gap-7">
-        {navItems.map((item: any, i) => {
+        {navItems.map((item: any, i: number) => {
           const link = item?.link
           if (!link) return null
 
           const dropdown = item?.dropdown
           const enabled = Boolean(dropdown?.enabled && dropdown?.items?.length)
 
-          const label = getLocalized(link?.label, locale)
+          const label = link?.label || ''
           const thisOpen = openIndex === i
 
-          // --- Simple link (no dropdown) ---
           if (!enabled) {
-            const href = resolveHref(link, locale)
-            if (!href) return null
-
-            const newTab = link?.newTab
-            const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
-
             return (
               <Link
                 key={i}
-                href={href}
-                {...newTabProps}
+                href={toHref(link)}
                 className="link-hover-swap text-white hover:text-white/80 transition-colors"
               >
+                {/* ✅ keep wrapper structure so text doesn't show twice */}
                 <span className="link-hover-swap__inner text-sm" data-text={label}>
                   {label}
                 </span>
@@ -204,7 +173,6 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
             )
           }
 
-          // --- Dropdown trigger ---
           return (
             <div
               key={i}
@@ -213,25 +181,14 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
               onMouseLeave={scheduleClose}
             >
               <div className="inline-flex items-center gap-1">
-                {(() => {
-                  const href = resolveHref(link, locale)
-                  if (!href) return null
-
-                  const newTab = link?.newTab
-                  const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
-
-                  return (
-                    <Link
-                      href={href}
-                      {...newTabProps}
-                      className="link-hover-swap text-white hover:text-white/80 transition-colors"
-                    >
-                      <span className="link-hover-swap__inner text-sm" data-text={label}>
-                        {label}
-                      </span>
-                    </Link>
-                  )
-                })()}
+                <Link
+                  href={toHref(link)}
+                  className="link-hover-swap text-white hover:text-white/80 transition-colors"
+                >
+                  <span className="link-hover-swap__inner text-sm" data-text={label}>
+                    {label}
+                  </span>
+                </Link>
 
                 <div className="h-5 w-5 flex items-center justify-center bg-[#15171a]/95 rounded-full">
                   <ChevronDown
@@ -247,7 +204,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
         })}
       </nav>
 
-      {/* ✅ CURTAIN DROPDOWN (MASK REVEAL) */}
+      {/* ✅ CURTAIN DROPDOWN (MASK REVEAL) — BACK TO ORIGINAL MECHANIC */}
       <div
         onMouseEnter={clearCloseTimer}
         onMouseLeave={scheduleClose}
@@ -255,7 +212,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
           'fixed left-0 right-0 top-0',
           'z-[900]',
           'overflow-hidden',
-          'bg-black/95 backdrop-blur-xl',
+          'bg-black/80 backdrop-blur-xl',
           isOpen ? 'pointer-events-auto' : 'pointer-events-none',
         ].join(' ')}
         style={{
@@ -267,8 +224,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
       >
         {/* Keep content below header */}
         <div style={{ paddingTop: HEADER_HEIGHT_PX }}>
-          <div className="container py-10">
-            {/* Content slides up */}
+          <div className="container py-10 border-t-[0.5px] border-white/20">
+            {/* Content does its own reveal (NOT moving with the curtain) */}
             <div
               className="grid grid-cols-12 gap-8 will-change-transform"
               style={{
@@ -280,11 +237,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
             >
               {/* LEFT */}
               <div className="col-span-3">
-                {panelTitleLink ? (
+                {panelTitle ? (
                   <Link
-                    key="panel-title"
-                    href={panelTitleLink}
-                    className="text-lg text-white will-change-transform inline-block"
+                    href={toHref(panelTitle)}
+                    className="link-hover-swap text-white hover:text-white/80 transition-colors will-change-transform inline-block"
                     style={{
                       transform: reveal ? 'translateY(0px)' : 'translateY(14px)',
                       transitionProperty: 'transform',
@@ -293,13 +249,14 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
                       transitionDelay: reveal ? `${PANEL_TITLE_DELAY}ms` : '0ms',
                     }}
                   >
-                    {panelTitleLabel}
+                    <span className="link-hover-swap__inner" data-text={panelTitle.label}>
+                      {panelTitle.label}
+                    </span>
                   </Link>
                 ) : null}
 
                 <p
-                  key="panel-text"
-                  className="text-sm font-light text-white/60 leading-relaxed max-w-[18rem] will-change-transform mt-3"
+                  className="text-sm font-light text-white/60 leading-relaxed max-w-[18rem] will-change-transform mt-2"
                   style={{
                     transform: reveal ? 'translateY(0px)' : 'translateY(14px)',
                     transitionProperty: 'transform',
@@ -319,30 +276,20 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
                     const ddLink = dd?.link
                     if (!ddLink) return null
 
-                    const title = getLocalized(ddLink?.label, locale)
-                    const desc = getLocalized(dd?.description, locale)
-                    const href = resolveHref(ddLink, locale)
-                    if (!href) return null
-
-                    const newTab = ddLink?.newTab
-                    const newTabProps = newTab
-                      ? { rel: 'noopener noreferrer', target: '_blank' }
-                      : {}
-
-                    const active = idx === activeItemIndex
-
-                    // ✅ stagger per row
+                    const title = ddLink.label || ''
+                    const desc = dd?.description || ''
                     const rowDelay = LIST_START + idx * ROW_STAGGER
                     const descDelay = rowDelay + DESC_EXTRA
 
+                    const active = idx === activeItemIndex
+
                     return (
                       <Link
-                        key={href} // ✅ stable key (no openTick)
-                        href={href}
-                        {...newTabProps}
+                        key={`${title}-${idx}`}
+                        href={toHref(ddLink)}
                         onMouseEnter={() => setActiveItemIndex(idx)}
                         className={[
-                          'group/item flex items-start justify-between gap-6 rounded-2xl px-6 py-5',
+                          'group group/item flex items-start justify-between gap-6 rounded-2xl px-4 py-3',
                           'transition-colors',
                           active ? 'bg-white/5' : 'hover:bg-white/5',
                           'will-change-transform',
@@ -356,7 +303,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
                         }}
                       >
                         <span className="flex flex-col">
-                          <span className="link-hover-swap text-white text-base leading-snug">
+                          <span className="link-hover-swap text-white text-sm leading-snug">
                             <span className="link-hover-swap__inner" data-text={title}>
                               {title}
                             </span>
@@ -406,16 +353,32 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
                 }}
               >
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-black/40">
-                  {previewImageUrl ? (
-                    <Image
-                      key={previewImageUrl}
-                      src={previewImageUrl}
-                      alt={panelTitleLabel || 'Preview'}
-                      fill
-                      className="object-cover nav-preview-img"
-                      sizes="(max-width: 1024px) 50vw, 28rem"
-                      priority={false}
-                    />
+                  {displayMedia ? (
+                    <div
+                      className={[
+                        'absolute inset-0 z-[1]',
+                        'nav-preview-current',
+                        incomingMedia ? 'nav-preview-current--dim' : '',
+                      ].join(' ')}
+                    >
+                      <Media
+                        resource={displayMedia}
+                        fill
+                        imgClassName="object-cover"
+                        priority={false}
+                      />
+                    </div>
+                  ) : null}
+
+                  {incomingMedia ? (
+                    <div className="absolute inset-0 z-[2] nav-preview-incoming">
+                      <Media
+                        resource={incomingMedia}
+                        fill
+                        imgClassName="object-cover"
+                        priority={false}
+                      />
+                    </div>
                   ) : null}
                 </div>
               </div>
@@ -423,17 +386,34 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ data, locale }) => {
           </div>
         </div>
 
-        {/* Image swap motion = translateY only */}
         <style jsx global>{`
-          .nav-preview-img {
-            animation: navImgIn 520ms cubic-bezier(0.2, 0, 0.1, 1);
+          .nav-preview-current {
+            transition: opacity 360ms ${IMG_EASE};
           }
-          @keyframes navImgIn {
+          .nav-preview-current--dim {
+            opacity: 0.72;
+          }
+          .nav-preview-incoming {
+            transform-origin: center center;
+            will-change: transform, opacity;
+            animation: navImgScaleDownIn ${IMG_DUR}ms ${IMG_EASE} both;
+          }
+          @keyframes navImgScaleDownIn {
             from {
-              transform: translateY(14px);
+              transform: scale(1.2);
+              opacity: 0.001;
             }
             to {
-              transform: translateY(0px);
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .nav-preview-incoming {
+              animation: none !important;
+            }
+            .nav-preview-current {
+              transition: none !important;
             }
           }
         `}</style>

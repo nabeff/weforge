@@ -16,7 +16,7 @@ const buttonVariants = cva(
     variants: {
       size: {
         clear: '',
-        default: 'h-10 px-4 py-2',
+        default: 'px-4 py-2',
         icon: 'h-10 w-10',
         lg: 'h-11 rounded px-8',
         sm: 'h-9 rounded px-3',
@@ -26,17 +26,12 @@ const buttonVariants = cva(
 
         // keep link so CMSLink appearance type includes "link"
         link: 'bg-transparent p-0 text-primary ',
-
-        // ✅ NEW PRIMARY
-        // base: white bg, black text
-        // hover: bg #C2290E, text white
-        // no radius, no borders
         primary: [
           'group relative overflow-hidden rounded-none border-0 shadow-none',
-          'px-[0.8rem] py-[0.3rem]',
-          'bg-white text-black',
+          'px-[0.9rem] py-[0.6rem]',
+          'bg-[#C2290E] text-white',
           'transition-colors duration-300',
-          'hover:bg-[#C2290E] hover:text-white',
+          'hover:bg-white hover:text-black',
           'rounded-[3rem]',
         ].join(' '),
       },

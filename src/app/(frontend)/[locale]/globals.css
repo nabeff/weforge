@@ -150,7 +150,7 @@ html[data-theme='light'] {
 .link-hover-swap > .link-hover-swap__inner {
   position: relative;
   display: inline-block;
-  transition: transform 0.6s cubic-bezier(0.76, 0, 0.24, 1);
+  transition: transform 0.4s cubic-bezier(0.76, 0, 0.24, 1);
   will-change: transform;
 }
 

@@ -2,43 +2,56 @@
 
 import { cn } from '@/utilities/ui'
 import React, { useEffect, useRef } from 'react'
-
 import type { Props as MediaProps } from '../types'
 
-import { getMediaUrl } from '@/utilities/getMediaUrl'
-
-export const VideoMedia: React.FC<MediaProps> = (props) => {
-  const { onClick, resource, videoClassName } = props
-
+export const VideoMedia: React.FC<MediaProps> = ({ onClick, resource, videoClassName }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
-  // const [showFallback] = useState<boolean>()
 
   useEffect(() => {
-    const { current: video } = videoRef
-    if (video) {
-      video.addEventListener('suspend', () => {
-        // setShowFallback(true);
-        // console.warn('Video was suspended, rendering fallback image.')
-      })
+    const video = videoRef.current
+    if (!video) return
+
+    // optional: ensure autoplay kicks in on some browsers
+    const tryPlay = async () => {
+      try {
+        await video.play()
+      } catch {
+        // ignore
+      }
     }
-  }, [])
+
+    tryPlay()
+  }, [resource])
 
   if (resource && typeof resource === 'object') {
-    const { filename } = resource
+    const url = (resource as any)?.url as string | undefined
+    const mimeType = (resource as any)?.mimeType as string | undefined
+    const cacheTagRaw = (resource as any)?.updatedAt as string | undefined
+    const cacheTag = cacheTagRaw ? encodeURIComponent(cacheTagRaw) : '1'
+
+    if (!url) return null
 
     return (
-      <video
-        autoPlay
-        className={cn(videoClassName)}
-        controls={false}
-        loop
-        muted
-        onClick={onClick}
-        playsInline
-        ref={videoRef}
-      >
-        <source src={getMediaUrl(`/media/${filename}`)} />
-      </video>
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          controls={false}
+          preload="auto"
+          onClick={onClick}
+          ref={videoRef}
+          className={cn(
+            'w-full h-full object-cover',
+            'absolute top-0 left-0',
+            'min-w-full min-h-full',
+            videoClassName,
+          )}
+        >
+          <source src={`${url}?v=${cacheTag}`} type={mimeType || undefined} />
+        </video>
+      </div>
     )
   }
 

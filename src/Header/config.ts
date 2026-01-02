@@ -1,3 +1,4 @@
+// src/payload/globals/Header.ts
 import type { GlobalConfig } from 'payload'
 import { link } from '@/fields/link'
 import { revalidateHeader } from './hooks/revalidateHeader'
@@ -14,10 +15,17 @@ export const Header: GlobalConfig = {
       required: true,
     },
 
+    // ✅ CTA ALWAYS ON (no enabled checkbox)
     {
       name: 'headerCTA',
       type: 'group',
-      fields: [{ name: 'enabled', type: 'checkbox', defaultValue: false }, link({})],
+      fields: [
+        link({
+          overrides: {
+            required: true,
+          },
+        }),
+      ],
     },
 
     {
@@ -25,12 +33,18 @@ export const Header: GlobalConfig = {
       type: 'array',
       localized: true,
       maxRows: 6,
+      required: true,
       admin: {
         initCollapsed: true,
         components: { RowLabel: '@/Header/RowLabel#RowLabel' },
       },
       fields: [
-        link({ appearances: false }),
+        link({
+          appearances: false,
+          overrides: {
+            required: true,
+          },
+        }),
 
         {
           name: 'dropdown',
@@ -39,17 +53,16 @@ export const Header: GlobalConfig = {
           fields: [
             { name: 'enabled', type: 'checkbox', defaultValue: false },
 
-            // ✅ Only show + require these fields when dropdown.enabled = true
             link({
               appearances: false,
               overrides: {
-                name: 'panelTitle', // <-- panel title is a LINK now
+                name: 'panelTitle',
                 label: 'Panel Title',
+                required: true,
                 admin: {
                   description: 'Big left title link inside the dropdown curtain.',
                   condition: (_: any, siblingData: any) => Boolean(siblingData?.enabled),
                 },
-                required: true,
               },
             }),
 
@@ -67,6 +80,7 @@ export const Header: GlobalConfig = {
               name: 'panelImage',
               type: 'upload',
               relationTo: 'media',
+              required: true,
               admin: {
                 condition: (_: any, siblingData: any) => Boolean(siblingData?.enabled),
               },
@@ -75,12 +89,19 @@ export const Header: GlobalConfig = {
             {
               name: 'items',
               type: 'array',
+              required: true,
+              minRows: 1,
               admin: {
                 initCollapsed: true,
                 condition: (_: any, siblingData: any) => Boolean(siblingData?.enabled),
               },
               fields: [
-                link({ appearances: false }),
+                link({
+                  appearances: false,
+                  overrides: {
+                    required: true,
+                  },
+                }),
 
                 {
                   name: 'description',
@@ -88,11 +109,11 @@ export const Header: GlobalConfig = {
                   localized: true,
                 },
 
-                // ✅ matches Nav.tsx: dd.itemImage
                 {
                   name: 'itemImage',
                   type: 'upload',
                   relationTo: 'media',
+                  required: true,
                 },
               ],
             },
