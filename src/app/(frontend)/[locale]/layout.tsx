@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
-import { cn } from '@/utilities/ui'
 import React from 'react'
+import { cn } from '@/utilities/ui'
 import { Footer } from '@/Footer/Component'
 import { Header } from '@/Header/Component'
 import { Providers } from '@/providers'
@@ -10,7 +10,7 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
-import { TypedLocale } from 'payload'
+import type { TypedLocale } from 'payload'
 import { notFound } from 'next/navigation'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { NextIntlClientProvider } from 'next-intl'
@@ -52,6 +52,18 @@ const grotesk = localFont({
   display: 'swap',
 })
 
+const saans = localFont({
+  src: [
+    {
+      path: '../../../../public/fonts/NeueHaasGrotDispRoman.otf',
+      weight: '400',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-saans',
+  display: 'swap',
+})
+
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
@@ -73,13 +85,18 @@ export default async function RootLayout({
   if (!routing.locales.includes(locale as any)) {
     notFound()
   }
+
   const { isEnabled } = await draftMode()
   setRequestLocale(locale)
 
   const messages = await getMessages()
 
   return (
-    <html className={cn(inter.variable, grotesk.variable)} lang={locale} suppressHydrationWarning>
+    <html
+      className={cn(inter.variable, grotesk.variable, saans.variable)}
+      lang={locale}
+      suppressHydrationWarning
+    >
       <head>
         <InitTheme />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />

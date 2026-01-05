@@ -1,32 +1,32 @@
-// src/Header/Nav.tsx
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, ChevronDown } from 'lucide-react'
-
 import type { Media as MediaType } from '@/payload-types'
 import type { TypedLocale } from 'payload'
-
 import { HEADER_HEIGHT_PX } from '../Component.client'
 import { Media } from '@/components/Media'
+import arrowRight from '@/../public/icons/arrow-right-up.svg'
+import Image from 'next/image'
 
 interface HeaderNavProps {
   navItems: any[]
   locale: TypedLocale
 }
 
-const toHref = (l: any) => l?.url || l?.href || '/'
+const toHref = (l: any) => {
+  const href = l?.url || l?.href
+  return (typeof href === 'string' && href.length > 0 ? href : '/') as string
+}
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [activeItemIndex, setActiveItemIndex] = useState<number>(0)
 
-  // ✅ used to re-trigger reveal (without remounting rows)
   const [openTick, setOpenTick] = useState(0)
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   const clearCloseTimer = () => {
     if (closeTimer.current) {
       clearTimeout(closeTimer.current)
@@ -49,30 +49,57 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
     }, 140)
   }, [])
 
-  useEffect(() => {
-    return () => clearCloseTimer()
-  }, [])
+  useEffect(() => () => clearCloseTimer(), [])
 
   const isOpen = openIndex !== null
-  const activeDropdown = isOpen ? navItems?.[openIndex!]?.dropdown : null
 
+  const [curtainVisible, setCurtainVisible] = useState(false)
+  const [renderIndex, setRenderIndex] = useState<number | null>(null)
   const [reveal, setReveal] = useState(false)
+  const OPEN_PANEL_HEIGHT = HEADER_HEIGHT_PX + 540
+  const EASE = 'cubic-bezier(0.2,0,0.1,1)'
+  const CURTAIN_DUR = 1000
+  const DUR = 520
+  const RIGHT_DELAY = 95
+  const LIST_START = 90
+  const ROW_STAGGER = 65
+  const DESC_EXTRA = 70
+  const PANEL_TITLE_DELAY = LIST_START
+  const PANEL_TEXT_DELAY = LIST_START + 80
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen && typeof openIndex === 'number') {
+      setRenderIndex(openIndex)
+    }
+  }, [isOpen, openIndex])
+
+  useEffect(() => {
+    // OPEN
+    if (isOpen) {
+      setCurtainVisible(true)
       setReveal(false)
-      return
+      const raf = requestAnimationFrame(() => setReveal(true))
+      return () => cancelAnimationFrame(raf)
     }
 
-    setReveal(false)
-    const id = requestAnimationFrame(() => setReveal(true))
-    return () => cancelAnimationFrame(id)
-  }, [isOpen, openTick])
+    if (curtainVisible) {
+      setReveal(false)
+      const t = setTimeout(() => {
+        setCurtainVisible(false)
+        setRenderIndex(null)
+      }, CURTAIN_DUR)
+      return () => clearTimeout(t)
+    }
+  }, [isOpen, openTick, curtainVisible, CURTAIN_DUR])
+
+  const activeDropdown = useMemo(() => {
+    if (renderIndex === null) return null
+    return navItems?.[renderIndex]?.dropdown ?? null
+  }, [navItems, renderIndex])
 
   const panelTitle = activeDropdown?.panelTitle
   const panelText = activeDropdown?.panelText || ''
   const panelImage = (activeDropdown?.panelImage as MediaType | undefined) || undefined
-
   const previewMedia = useMemo(() => {
     if (!activeDropdown) return null
     const items = (activeDropdown.items || []) as any[]
@@ -81,16 +108,12 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
     return perItem || panelImage || null
   }, [activeDropdown, activeItemIndex, panelImage])
 
-  // ✅ Image swap timings (scale-down 1.2 -> 1)
   const IMG_DUR = 620
   const IMG_EASE = 'cubic-bezier(0.22,1,0.36,1)'
-
   const [displayMedia, setDisplayMedia] = useState<MediaType | null>(null)
   const [incomingMedia, setIncomingMedia] = useState<MediaType | null>(null)
-
   const swapTokenRef = useRef(0)
   const swapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   const clearSwapTimer = () => {
     if (swapTimerRef.current) {
       clearTimeout(swapTimerRef.current)
@@ -126,23 +149,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
     return () => clearSwapTimer()
   }, [previewMedia, displayMedia])
 
-  // ✅ HEIGHT of the curtain (mask)
-  const OPEN_PANEL_HEIGHT = HEADER_HEIGHT_PX + 540
-
-  // ✅ Curtain: slower, pure slide (max-height), no opacity tricks
-  const EASE = 'cubic-bezier(0.2,0,0.1,1)'
-  const CURTAIN_DUR = 1200 // slower
-
-  // content timing (same vibe as before)
-  const DUR = 520
-  const RIGHT_DELAY = 95
-
-  const LIST_START = 90
-  const ROW_STAGGER = 65
-  const DESC_EXTRA = 70
-
-  const PANEL_TITLE_DELAY = LIST_START
-  const PANEL_TEXT_DELAY = LIST_START + 80
+  // keep display media stable between different dropdown opens
+  useEffect(() => {
+    if (!isOpen) return
+    if (!previewMedia) return
+    if (!displayMedia) setDisplayMedia(previewMedia)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   return (
     <>
@@ -163,10 +176,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
               <Link
                 key={i}
                 href={toHref(link)}
-                className="link-hover-swap text-white hover:text-white/80 transition-colors"
+                className="link-hover-swap text-white hover:text-white/80 transition-colors "
               >
-                {/* ✅ keep wrapper structure so text doesn't show twice */}
-                <span className="link-hover-swap__inner text-sm" data-text={label}>
+                <span className="link-hover-swap__inner text-base" data-text={label}>
                   {label}
                 </span>
               </Link>
@@ -185,15 +197,15 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
                   href={toHref(link)}
                   className="link-hover-swap text-white hover:text-white/80 transition-colors"
                 >
-                  <span className="link-hover-swap__inner text-sm" data-text={label}>
+                  <span className="link-hover-swap__inner text-base" data-text={label}>
                     {label}
                   </span>
                 </Link>
 
-                <div className="h-5 w-5 flex items-center justify-center bg-[#15171a]/95 rounded-full">
+                <div className="h-5 w-5 flex items-center justify-center bg-[#C2290E]/40 rounded-full">
                   <ChevronDown
                     className={[
-                      'h-3 w-3 opacity-70 transition-transform duration-200',
+                      'h-3 w-3 opacity-90 transition-transform duration-200',
                       thisOpen ? 'rotate-180' : '',
                     ].join(' ')}
                   />
@@ -204,7 +216,6 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
         })}
       </nav>
 
-      {/* ✅ CURTAIN DROPDOWN (MASK REVEAL) — BACK TO ORIGINAL MECHANIC */}
       <div
         onMouseEnter={clearCloseTimer}
         onMouseLeave={scheduleClose}
@@ -213,10 +224,11 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
           'z-[900]',
           'overflow-hidden',
           'bg-black/80 backdrop-blur-xl',
-          isOpen ? 'pointer-events-auto' : 'pointer-events-none',
+          curtainVisible ? 'pointer-events-auto' : 'pointer-events-none',
         ].join(' ')}
         style={{
-          maxHeight: isOpen ? OPEN_PANEL_HEIGHT : 0,
+          // ✅ open: expand to height, close: shrink to 0 (masking content)
+          maxHeight: curtainVisible && isOpen ? OPEN_PANEL_HEIGHT : 0,
           transitionProperty: 'max-height',
           transitionDuration: `${CURTAIN_DUR}ms`,
           transitionTimingFunction: EASE,
@@ -225,7 +237,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
         {/* Keep content below header */}
         <div style={{ paddingTop: HEADER_HEIGHT_PX }}>
           <div className="container py-10 border-t-[0.5px] border-white/20">
-            {/* Content does its own reveal (NOT moving with the curtain) */}
+            {/* ✅ Content slides up on open, slides down on close (gets masked by curtain) */}
             <div
               className="grid grid-cols-12 gap-8 will-change-transform"
               style={{
@@ -237,10 +249,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
             >
               {/* LEFT */}
               <div className="col-span-3">
-                {panelTitle ? (
+                {panelTitle?.label ? (
                   <Link
                     href={toHref(panelTitle)}
-                    className="link-hover-swap text-white hover:text-white/80 transition-colors will-change-transform inline-block"
+                    className="link-hover-swap text-white hover:text-white/80 transition-colors will-change-transform inline-block text-xl"
                     style={{
                       transform: reveal ? 'translateY(0px)' : 'translateY(14px)',
                       transitionProperty: 'transform',
@@ -249,14 +261,14 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
                       transitionDelay: reveal ? `${PANEL_TITLE_DELAY}ms` : '0ms',
                     }}
                   >
-                    <span className="link-hover-swap__inner" data-text={panelTitle.label}>
+                    <span className="link-hover-swap__inner text-xl" data-text={panelTitle.label}>
                       {panelTitle.label}
                     </span>
                   </Link>
                 ) : null}
 
                 <p
-                  className="text-sm font-light text-white/60 leading-relaxed max-w-[18rem] will-change-transform mt-2"
+                  className="text-sm font-light text-white/60 leading-relaxed max-w-[18rem] will-change-transform "
                   style={{
                     transform: reveal ? 'translateY(0px)' : 'translateY(14px)',
                     transitionProperty: 'transform',
@@ -333,7 +345,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({ navItems = [], locale }) =
                               : 'opacity-0 -translate-x-1 group-hover/item:opacity-100 group-hover/item:translate-x-0',
                           ].join(' ')}
                         >
-                          <ArrowRight className="h-4 w-4 text-white" />
+                          <Image src={arrowRight} alt="" width={16} height={16} />
                         </span>
                       </Link>
                     )

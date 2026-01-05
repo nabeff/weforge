@@ -16,7 +16,7 @@
   h6 {
     font-size: unset;
     font-weight: unset;
-    @apply font-title;
+    @apply font-sans;
   }
 
   * {
@@ -94,8 +94,25 @@
   }
 }
 
+/* Stop the top/bounce overscroll + prevent sideways scroll */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none; /* blocks the top bounce/chain */
+}
+
+/* Optional (helps some layouts that still push width) */
+#___next,
+main {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 html {
   opacity: 0;
+  scroll-behavior: smooth;
 }
 
 html[data-theme='dark'],

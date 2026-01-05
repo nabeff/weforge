@@ -2,24 +2,15 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/utilities/ui'
 import type { Page, Post } from '@/payload-types'
 import type { TypedLocale } from 'payload'
-import { ArrowRight, ExternalLink, Phone, Mail, type LucideIcon } from 'lucide-react'
 
-/* ---------------------------------- Types --------------------------------- */
+import arrowTiltRight from '@/../public/icons/arrow-right-up.svg'
 
 type LocalizedString = string | Record<string, string> | null | undefined
-
-export type LinkIcon = 'arrowRight' | 'external' | 'phone' | 'mail'
-
-const ICONS: Record<LinkIcon, LucideIcon> = {
-  arrowRight: ArrowRight,
-  external: ExternalLink,
-  phone: Phone,
-  mail: Mail,
-}
 
 export type CMSLinkAppearance =
   | 'inline'
@@ -29,13 +20,10 @@ export type CMSLinkAppearance =
   | 'outline'
   | 'link'
   | 'cmsLink'
-  | null
-  | undefined
 
 export type CMSLinkType = {
   locale?: TypedLocale
 
-  // link value
   type?: 'custom' | 'reference' | 'email' | 'phone' | null
   newTab?: boolean | null
   label?: LocalizedString
@@ -49,15 +37,16 @@ export type CMSLinkType = {
   email?: string | null
   phone?: string | null
 
-  // rendering
-  appearance?: CMSLinkAppearance
+  appearance?: CMSLinkAppearance | null
   size?: ButtonProps['size'] | null
   className?: string
   children?: React.ReactNode
 
-  // icon controls
+  /**
+   * ✅ ONLY ONE ICON:
+   * if true -> show the tilted arrow svg
+   */
   showIcon?: boolean | null
-  icon?: LinkIcon | null
   iconPosition?: 'left' | 'right' | null
 }
 
@@ -113,10 +102,23 @@ function resolveHref(props: CMSLinkType): string | null {
   return getLocalized(url, locale, 'en')
 }
 
-function normalizeAppearance(a: CMSLinkAppearance) {
+function normalizeAppearance(a: CMSLinkAppearance | null | undefined) {
   const appearance = (a ?? 'inline') as Exclude<CMSLinkAppearance, null | undefined>
   if (appearance === 'cmsLink') return 'link' as const
   return appearance as Exclude<CMSLinkAppearance, null | undefined>
+}
+
+function ArrowIcon() {
+  return (
+    <Image
+      src={arrowTiltRight}
+      alt=""
+      width={16}
+      height={16}
+      className="h-4 w-4"
+      aria-hidden="true"
+    />
+  )
 }
 
 /* -------------------------------- Component -------------------------------- */
@@ -131,50 +133,39 @@ export const CMSLink: React.FC<CMSLinkType> = (props) => {
     label,
     children,
     showIcon,
-    icon,
     iconPosition = 'right',
   } = props
 
   const appearance = normalizeAppearance(appearanceRaw)
+
   const hrefRaw = resolveHref({ ...props, locale })
   if (!hrefRaw) return null
 
   const href = prefixLocalePath(hrefRaw, locale)
-
   const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
 
   const resolvedLabel = getLocalized(label, locale, 'en')
   const text = resolvedLabel ?? ''
 
-  const IconComp = showIcon && icon ? ICONS[icon] : null
-  const leftIcon = IconComp && iconPosition === 'left' ? <IconComp className="h-4 w-4" /> : null
-  const rightIcon = IconComp && iconPosition === 'right' ? <IconComp className="h-4 w-4" /> : null
+  const leftIcon = showIcon && iconPosition === 'left' ? <ArrowIcon /> : null
+  const rightIcon = showIcon && iconPosition === 'right' ? <ArrowIcon /> : null
 
-  const forcePrimaryArrow = appearance === 'primary'
-
-  const PrimaryLabel = (
-    <span className="relative z-[1] inline-flex items-center gap-2">
-      {leftIcon}
-
-      <span className="link-hover-swap">
-        <span className="link-hover-swap__inner whitespace-nowrap" data-text={text}>
-          {text}
-          {children}
-        </span>
+  const LabelSwap = (
+    <span className="link-hover-swap">
+      <span className="link-hover-swap__inner whitespace-nowrap" data-text={text}>
+        {text}
       </span>
     </span>
   )
 
-  const DefaultContent = (
-    <span className="relative z-[1] inline-flex items-center gap-6">
+  const content = (
+    <span className="relative z-[1] inline-flex items-center gap-1">
       {leftIcon}
-      {text}
+      {LabelSwap}
       {children}
       {rightIcon}
     </span>
   )
-
-  const content = appearance === 'primary' ? PrimaryLabel : DefaultContent
 
   if (appearance === 'inline') {
     return (

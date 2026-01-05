@@ -17,7 +17,7 @@ export function LocaleSwitcher() {
         aria-current={isFR ? 'true' : undefined}
         className={[
           'link-hover-swap',
-          'text-sm  tracking-wide',
+          'text-base  tracking-wide',
           // ✅ hover should NOT turn white, only active is white
           isFR ? 'text-white opacity-100 ' : 'text-white/60 hover:text-white/60',
         ].join(' ')}
@@ -35,7 +35,7 @@ export function LocaleSwitcher() {
         aria-current={isEN ? 'true' : undefined}
         className={[
           'link-hover-swap',
-          'text-sm  tracking-wide',
+          'text-base  tracking-wide',
           // ✅ hover should NOT turn white, only active is white
           isEN ? 'text-white opacity-100 ' : 'text-white/60 hover:text-white/60',
         ].join(' ')}

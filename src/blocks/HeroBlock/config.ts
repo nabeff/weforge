@@ -16,6 +16,13 @@ export const HeroBlock: Block = {
       label: 'Title',
     },
     {
+      name: 'title2',
+      type: 'text',
+      required: true,
+      localized: true, // ✅
+      label: 'Title 2',
+    },
+    {
       name: 'background',
       type: 'upload',
       relationTo: 'media',

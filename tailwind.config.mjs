@@ -94,7 +94,7 @@ const config = {
         warning: 'hsl(var(--warning))',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-saans)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
         title: ['var(--font-grotesk)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
       },
 

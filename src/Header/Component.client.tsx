@@ -41,19 +41,20 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
       {...(theme ? { 'data-theme': theme } : {})}
     >
       <div className="relative h-full isolate">
-        <div className="container h-full">
-          <div className="h-full flex justify-between items-center">
+        <div className="container h-full flex items-center">
+          <div className=" flex justify-between items-end h-auto w-full">
             <div className="relative z-[1400]">
-              <h2 className="font-medium text-3xl leading-none">{brandTitle}</h2>
+              <h2 className="font-bold text-4xl leading-none">{brandTitle}</h2>
             </div>
 
             <div className="relative z-[1300]">
-              <HeaderNav navItems={navItems as any[]} locale={locale} />
+              <HeaderNav navItems={navItems} locale={locale} />
             </div>
 
             <div className="relative z-[1300] flex items-center gap-8">
               <LocaleSwitcher />
-              <CMSLink {...(headerCTA as any).link} locale={locale} className="whitespace-nowrap" />
+
+              <CMSLink {...headerCTA.link} locale={locale} className="text-base" />
             </div>
           </div>
         </div>

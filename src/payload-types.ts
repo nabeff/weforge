@@ -205,7 +205,7 @@ export interface Page {
       | null;
     media?: (string | null) | Media;
   };
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | HeroBlock)[];
+  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | HeroBlock | TwoColumnTextCTA)[];
   meta?: {
     title?: string | null;
     /**
@@ -800,10 +800,66 @@ export interface Form {
  */
 export interface HeroBlock {
   title: string;
+  title2: string;
   background: string | Media;
   id?: string | null;
   blockName?: string | null;
   blockType: 'heroBlock';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TwoColumnTextCTA".
+ */
+export interface TwoColumnTextCTA {
+  leftTitle: string;
+  rightText: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  cta: {
+    links: {
+      link: {
+        type?: ('reference' | 'custom' | 'email' | 'phone') | null;
+        newTab?: boolean | null;
+        reference?:
+          | ({
+              relationTo: 'pages';
+              value: string | Page;
+            } | null)
+          | ({
+              relationTo: 'posts';
+              value: string | Post;
+            } | null);
+        url?: string | null;
+        email?: string | null;
+        phone?: string | null;
+        label: string;
+        showIcon?: boolean | null;
+        icon?: ('arrowRight' | 'external' | 'mail' | 'phone') | null;
+        iconPosition?: ('left' | 'right') | null;
+        /**
+         * Choose how the link should be rendered.
+         */
+        appearance?: ('default' | 'outline' | 'primary' | 'secondary' | 'cmsLink') | null;
+      };
+      id?: string | null;
+    }[];
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'twoColumnTextCTA';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1119,6 +1175,7 @@ export interface PagesSelect<T extends boolean = true> {
         archive?: T | ArchiveBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
         heroBlock?: T | HeroBlockSelect<T>;
+        twoColumnTextCTA?: T | TwoColumnTextCTASelect<T>;
       };
   meta?:
     | T
@@ -1234,7 +1291,43 @@ export interface FormBlockSelect<T extends boolean = true> {
  */
 export interface HeroBlockSelect<T extends boolean = true> {
   title?: T;
+  title2?: T;
   background?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TwoColumnTextCTA_select".
+ */
+export interface TwoColumnTextCTASelect<T extends boolean = true> {
+  leftTitle?: T;
+  rightText?: T;
+  cta?:
+    | T
+    | {
+        links?:
+          | T
+          | {
+              link?:
+                | T
+                | {
+                    type?: T;
+                    newTab?: T;
+                    reference?: T;
+                    url?: T;
+                    email?: T;
+                    phone?: T;
+                    label?: T;
+                    showIcon?: T;
+                    icon?: T;
+                    iconPosition?: T;
+                    appearance?: T;
+                  };
+              id?: T;
+            };
+        id?: T;
+      };
   id?: T;
   blockName?: T;
 }

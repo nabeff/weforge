@@ -9,6 +9,7 @@ import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
 import { TypedLocale } from 'payload'
 import { HeroBlock } from './HeroBlock/Component'
+import { TwoColumnTextCTA } from './TwoColumnTextCTA/Component'
 
 const blockComponents = {
   archive: ArchiveBlock,
@@ -17,6 +18,7 @@ const blockComponents = {
   formBlock: FormBlock,
   mediaBlock: MediaBlock,
   heroBlock: HeroBlock,
+   twoColumnTextCTA: TwoColumnTextCTA,
 }
 
 export const RenderBlocks: React.FC<{
